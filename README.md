@@ -1,3 +1,5 @@
+vue.js chrome extension for work with bitrix24 entities from gmail
+
 # bx24mail
 
 ## Project setup
@@ -25,5 +27,4 @@ npm run test
 npm run lint
 ```
 
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+
