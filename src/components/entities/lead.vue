@@ -1,5 +1,5 @@
 <template>
-    <v-app id="lead">
+    <v-app id="lead" >
         <v-form
                 ref="form"
                 v-model="valid"
@@ -100,7 +100,11 @@
 
     export default {
         name: 'Lead',
-
+        computed: {
+            managersStore() {
+                return this.$store.state.baseUrl;
+            }
+        },
         data () {
 
             const srcs = {
@@ -112,6 +116,7 @@
             };
 
             return {
+                userAccess: false,
                 valid: true,
                 name: '',
                 company: null,
@@ -166,7 +171,12 @@
             },
             remove () {
                 this.responsible = null;
-            }
+            },
+
+        },
+
+        created: function() {
+            this.$store.dispatch('loadManagers') // dispatch loading
         }
     }
 </script>

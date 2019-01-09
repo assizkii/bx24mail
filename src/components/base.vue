@@ -8,7 +8,7 @@
                 mt-10
         >
             <v-list dense>
-                <v-list-tile v-on:click="changeComponent('Lead')">
+                <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Lead')">
                     <v-list-tile-action>
                         <v-badge right  color="purple" >
                             <v-icon
@@ -23,7 +23,7 @@
                         <v-list-tile-title>Лид</v-list-tile-title>
                     </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile v-on:click="changeComponent('Contact')">
+                <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Contact')">
                     <v-list-tile-action>
                         <v-icon large>account_box</v-icon>
                     </v-list-tile-action>
@@ -31,7 +31,7 @@
                         <v-list-tile-title>Контакт</v-list-tile-title>
                     </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile v-on:click="changeComponent('Company')">
+                <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Company')">
                     <v-list-tile-action>
                         <v-icon large>supervisor_account</v-icon>
                     </v-list-tile-action>
@@ -39,7 +39,7 @@
                         <v-list-tile-title>Компания</v-list-tile-title>
                     </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile v-on:click="changeComponent('Deal')">
+                <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Deal')">
                     <v-list-tile-action>
                         <v-icon large>work</v-icon>
                     </v-list-tile-action>
@@ -47,7 +47,7 @@
                         <v-list-tile-title>Сделка</v-list-tile-title>
                     </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile v-on:click="changeComponent('Quote')">
+                <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Quote')">
                     <v-list-tile-action>
                         <v-icon large>contact_mail</v-icon>
                     </v-list-tile-action>
@@ -55,7 +55,7 @@
                         <v-list-tile-title>Предложение</v-list-tile-title>
                     </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile v-on:click="changeComponent('Task')">
+                <v-list-tile v-if='taskAccess' v-on:click="changeComponent('Task')">
                     <v-list-tile-action>
                         <v-icon large>done</v-icon>
                     </v-list-tile-action>
@@ -110,22 +110,40 @@
     import Quote from './entities/quote'
     import Task from './entities/task'
     import Settings from './entities/settings'
+    // import config from './config'
+    import { mapState } from 'vuex'
 
     export default {
         name: 'Base',
         components: {
             Lead, Contact, Company, Deal, Quote, Task, Settings
         },
+        computed: mapState({
+            // arrow functions can make the code very succinct!
+            scope: state => state.scope,
+            test: state => state.baseUrl
+        }),
         data: () => ({
             drawer: null,
-            selectComponent: null
+            selectComponent: null,
+            crmAccess: false,
+            taskAccess: false,
         }),
         methods: {
             changeComponent: function (componentName) {
                 this.selectComponent = componentName;
             }
         },
-        created: function() {
+        created() {
+
+            this.$store.dispatch('loadScope');
+
+            if (this.scope.indexOf('crm') !== -1) {
+                this.crmAccess = true;
+            }
+            if (this.scope.indexOf('task') !== -1) {
+                this.taskAccess = true
+            }
 
         }
     }

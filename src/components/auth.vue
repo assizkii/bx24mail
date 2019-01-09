@@ -14,6 +14,7 @@
                          lazy-validation>
                   <v-text-field  :rules="required" prepend-icon="home" v-model="baseUrl" label="Адрес портала" type="text"></v-text-field>
                   <v-text-field  :rules="required" id="password" prepend-icon="info" v-model="hook" label="Входящий веб-хук" type="password"></v-text-field>
+                  <v-text-field  :rules="required" id="userId" prepend-icon="account_circle" v-model="userId" label="ID пользователя, создавшего вебхук" type="text"></v-text-field>
                 </v-form>
               </v-card-text>
               <v-card-actions>
@@ -32,6 +33,7 @@
   export default {
     data: () => ({
       valid: true,
+      userId: '',
       baseUrl: '',
       hook: '',
       required: [
@@ -48,6 +50,7 @@
           this.snackbar = true;
           localStorage.hook = this.hook;
           localStorage.baseUrl = this.baseUrl;
+          localStorage.userId = this.userId;
           this.$emit('login')
         }
 

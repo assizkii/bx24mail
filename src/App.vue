@@ -7,8 +7,9 @@
 </template>
 
 <script>
-import Auth from './components/auth'
 import Base from './components/base'
+import Auth from './components/auth'
+
 
 export default {
   name: 'App',
@@ -22,8 +23,12 @@ export default {
     }
   },
   mounted() {
-    if (typeof(localStorage.hook) != 'undefined' && typeof(localStorage.baseUrl) != 'undefined') {
+    if (typeof(localStorage.hook) != 'undefined' && typeof(localStorage.baseUrl) != 'undefined'  && typeof(localStorage.userId) != 'undefined') {
+
       this.selectComponent = 'Base';
+      let baseUrl = localStorage.baseUrl+'/rest/'+localStorage.userId+'/'+localStorage.hook;
+      this.$store.dispatch('setBaseUrl', baseUrl);
+
     } else {
       this.selectComponent = 'Auth';
     }
