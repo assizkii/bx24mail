@@ -13,7 +13,9 @@ const state = {
     loading: true,
     managers: [],
     baseUrl: '',
-    scope: []
+    scope: [],
+    contacts: [],
+    companies: []
 };
 
 // mutations are operations that actually mutates the state.
@@ -28,13 +30,22 @@ const mutations = {
         state.scope = scope;
     },
 
-    updateManagers(state, posts) {
-        state.managers = posts
+    updateManagers(state, managers) {
+        state.managers = managers
+    },
+
+    updateContacts(state, contacts) {
+        state.contacts = contacts
+    },
+
+    updateCompanies(state, companies) {
+        state.companies = companies
     },
 
     changeLoadingState(state, loading) {
         state.loading = loading
     }
+
 };
 
 // actions are functions that cause side effects and can involve
@@ -45,12 +56,64 @@ const actions = {
         commit('updateBaseUrl', url)
     },
 
+    // load hook scope
     loadScope: async (context) => {
-        let {data} = await axios.get(state.baseUrl+'/scope/', {});
 
-        context.commit('updateScope', data.result);
-        context.commit('changeLoadingState', false)
+        if (!state.scope.length) {
+            context.commit('changeLoadingState', true);
+
+            await axios.get(state.baseUrl+'/scope/').then(response => {
+
+                context.commit('updateScope', response.data.result);
+                context.commit('changeLoadingState', false)
+            })
+        }
+    },
+
+    // load managers list
+    loadManagers: async (context) => {
+
+        if (!state.managers.length) {
+            context.commit('changeLoadingState', true);
+            let params = {
+                ACTIVE : 'Y'
+            };
+            await axios.get(state.baseUrl+'/user.get.json', {params}).then(response => {
+                context.commit('updateManagers', response.data.result);
+                context.commit('changeLoadingState', false)
+            })
+        }
+    },
+
+    // load contacts list
+    loadContacts: async (context, query) => {
+        context.commit('changeLoadingState', true);
+        let params = {
+            select: ['ID', 'NAME', 'LAST_NAME'],
+            filter: { '%LAST_NAME': query, }
+        };
+
+        await axios.post(state.baseUrl+'/crm.contact.list.json', params).then(response => {
+            context.commit('updateContacts', response.data.result);
+            context.commit('changeLoadingState', false)
+        })
+    },
+
+    // load companies list
+    loadCompanies: async (context, query) => {
+        context.commit('changeLoadingState', true);
+        let params = {
+            select: ['TITLE', 'ID'],
+            filter: { '%TITLE': query, }
+        };
+
+        await axios.post(state.baseUrl+'/crm.company.list.json', params).then(response => {
+            context.commit('updateCompanies', response.data.result);
+            context.commit('changeLoadingState', false)
+        })
     }
+
+
 
 };
 
@@ -63,8 +126,29 @@ const getters = {
 
     scope(state) {
        return state.scope
-    }
+    },
 
+    managers(state) {
+      return  state.managers
+          .filter(manager => manager.PERSONAL_PHOTO)
+          .map( (manager) => {
+                manager.FULL_NAME = manager.NAME + " " +manager.LAST_NAME
+                return manager
+         });
+    },
+
+    contacts(state) {
+        return  state.contacts
+            // .filter(contact => contact.NAME)
+            .map( (contact) => {
+                contact.FULL_NAME = contact.NAME + " " +contact.LAST_NAME
+                return contact
+            });
+    },
+
+    companies(state) {
+        return state.companies
+    },
 };
 
 // A Vuex instance is created by combining the state, mutations, actions,

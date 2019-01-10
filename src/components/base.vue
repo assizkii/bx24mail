@@ -103,6 +103,7 @@
 </template>
 
 <script>
+
     import Lead from './entities/lead'
     import Contact from './entities/contact'
     import Company from './entities/company'
@@ -110,7 +111,7 @@
     import Quote from './entities/quote'
     import Task from './entities/task'
     import Settings from './entities/settings'
-    // import config from './config'
+
     import { mapState } from 'vuex'
 
     export default {
@@ -119,9 +120,8 @@
             Lead, Contact, Company, Deal, Quote, Task, Settings
         },
         computed: mapState({
-            // arrow functions can make the code very succinct!
             scope: state => state.scope,
-            test: state => state.baseUrl
+            loading: state => state.loading,
         }),
         data: () => ({
             drawer: null,
@@ -132,19 +132,21 @@
         methods: {
             changeComponent: function (componentName) {
                 this.selectComponent = componentName;
-            }
+            },
         },
+        mounted() {
+
+        },
+
         created() {
-
-            this.$store.dispatch('loadScope');
-
-            if (this.scope.indexOf('crm') !== -1) {
-                this.crmAccess = true;
-            }
-            if (this.scope.indexOf('task') !== -1) {
-                this.taskAccess = true
-            }
-
+            this.$store.dispatch("loadScope").then(() => {
+                if (this.scope.indexOf('crm') !== -1) {
+                    this.crmAccess = true;
+                }
+                if (this.scope.indexOf('task') !== -1) {
+                    this.taskAccess = true
+                }
+            })
         }
     }
 </script>

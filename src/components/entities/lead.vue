@@ -19,28 +19,16 @@
                     required
             ></v-text-field>
 
-            <v-select
+            <v-autocomplete
                     v-model="company"
                     :items="companies"
-                    label="Компания"
-                    required
-            ></v-select>
-
-            <v-select
-                    v-model="contact"
-                    :items="contacts"
-                    label="Контакт"
-                    required
-            ></v-select>
-
-            <v-autocomplete
-                    v-model="responsible"
-                    :items="managers"
                     chips
                     color="blue-grey lighten-2"
-                    label="Менеджер"
-                    item-text="name"
-                    item-value="name"
+                    label="Компания"
+                    item-text="TITLE"
+                    item-value="ID"
+                    @input="setCompany"
+                    @keyup="searchCompanies"
             >
                 <template
                         slot="selection"
@@ -50,12 +38,88 @@
                             :selected="data.selected"
                             close
                             class="chip--select-multi"
-                            @input="remove()"
+                            @input="company = null"
+                    >
+                        {{ data.item.TITLE }}
+                    </v-chip>
+                </template>
+                <template
+                        slot="item"
+                        slot-scope="data"
+                >
+                    <template v-if="typeof data.item !== 'object'">
+                        <v-list-tile-content v-text="data.item"></v-list-tile-content>
+                    </template>
+                    <template v-else>
+                        <v-list-tile-content>
+                            <v-list-tile-title v-html="data.item.TITLE"></v-list-tile-title>
+                        </v-list-tile-content>
+                    </template>
+                </template>
+            </v-autocomplete>
+
+            <v-autocomplete
+                    v-model="contact"
+                    :items="contacts"
+                    chips
+                    color="blue-grey lighten-2"
+                    label="Контакт"
+                    item-text="FULL_NAME"
+                    item-value="ID"
+                    @input="setContact"
+                    @keyup="searchContact"
+            >
+                <template
+                        slot="selection"
+                        slot-scope="data"
+                >
+                    <v-chip
+                            :selected="data.selected"
+                            close
+                            class="chip--select-multi"
+                            @input="contact = null"
+                    >
+                        {{ data.item.FULL_NAME }}
+                    </v-chip>
+                </template>
+                <template
+                        slot="item"
+                        slot-scope="data"
+                >
+                    <template v-if="typeof data.item !== 'object'">
+                        <v-list-tile-content v-text="data.item"></v-list-tile-content>
+                    </template>
+                    <template v-else>
+                        <v-list-tile-content>
+                            <v-list-tile-title v-html="data.item.FULL_NAME"></v-list-tile-title>
+                        </v-list-tile-content>
+                    </template>
+                </template>
+            </v-autocomplete>
+
+            <v-autocomplete
+                    v-model="responsible"
+                    :items="managers"
+                    chips
+                    color="blue-grey lighten-2"
+                    label="Менеджер"
+                    item-text="FULL_NAME"
+                    item-value="ID"
+            >
+                <template
+                        slot="selection"
+                        slot-scope="data"
+                >
+                    <v-chip
+                            :selected="data.selected"
+                            close
+                            class="chip--select-multi"
+                            @input="responsible = null"
                     >
                         <v-avatar>
-                            <img :src="data.item.avatar">
+                            <img :src="data.item.PERSONAL_PHOTO">
                         </v-avatar>
-                        {{ data.item.name }}
+                        {{ data.item.FULL_NAME }}
                     </v-chip>
                 </template>
                 <template
@@ -67,11 +131,11 @@
                     </template>
                     <template v-else>
                         <v-list-tile-avatar>
-                            <img :src="data.item.avatar">
+                            <img :src="data.item.PERSONAL_PHOTO">
                         </v-list-tile-avatar>
                         <v-list-tile-content>
-                            <v-list-tile-title v-html="data.item.name"></v-list-tile-title>
-                            <v-list-tile-sub-title v-html="data.item.group"></v-list-tile-sub-title>
+                            <v-list-tile-title v-html="data.item.FULL_NAME"></v-list-tile-title>
+                            <v-list-tile-sub-title v-html="data.item.PERSONAL_PROFESSION"></v-list-tile-sub-title>
                         </v-list-tile-content>
                     </template>
                 </template>
@@ -98,22 +162,21 @@
 
 <script>
 
+    import { mapGetters } from 'vuex'
+    import debounce from 'debounce'
+
     export default {
         name: 'Lead',
         computed: {
-            managersStore() {
-                return this.$store.state.baseUrl;
-            }
+            ...mapGetters([
+                'managers',
+                'loading',
+                'contacts',
+                'companies'
+            ])
         },
-        data () {
 
-            const srcs = {
-                1: 'https://cdn.vuetifyjs.com/images/lists/1.jpg',
-                2: 'https://cdn.vuetifyjs.com/images/lists/2.jpg',
-                3: 'https://cdn.vuetifyjs.com/images/lists/3.jpg',
-                4: 'https://cdn.vuetifyjs.com/images/lists/4.jpg',
-                5: 'https://cdn.vuetifyjs.com/images/lists/5.jpg'
-            };
+        data () {
 
             return {
                 userAccess: false,
@@ -131,32 +194,6 @@
                     v => !!v || 'Фамилия обязательна'
                 ],
 
-                companies: [
-                    'Компания 1',
-                    'Компания 2',
-                    'Компания 3',
-                    'Компания 4'
-                ],
-                contacts: [
-                    'Контакт 1',
-                    'Контакт 2',
-                    'Контакт 3',
-                    'Контакт 4'
-                ],
-
-                managers: [
-                    { header: 'Group 1' },
-                    { name: 'Sandra Adams', group: 'Group 1', avatar: srcs[1] },
-                    { name: 'Ali Connors', group: 'Group 1', avatar: srcs[2] },
-                    { name: 'Trevor Hansen', group: 'Group 1', avatar: srcs[3] },
-                    { name: 'Tucker Smith', group: 'Group 1', avatar: srcs[2] },
-                    { divider: true },
-                    { header: 'Group 2' },
-                    { name: 'Britta Holt', group: 'Group 2', avatar: srcs[4] },
-                    { name: 'Jane Smith ', group: 'Group 2', avatar: srcs[5] },
-                    { name: 'John Smith', group: 'Group 2', avatar: srcs[1] },
-                    { name: 'Sandra Williams', group: 'Group 2', avatar: srcs[3] }
-                ],
                 checkbox: false
             }
         },
@@ -166,17 +203,37 @@
                     this.snackbar = true
                 }
             },
+
             reset () {
                 this.$refs.form.reset()
             },
-            remove () {
-                this.responsible = null;
+
+            setContact (id) {
+                console.log(id)
             },
+
+            setCompany (id) {
+                console.log(id)
+            },
+
+            searchContact: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    this.$store.dispatch("loadContacts", query)
+                }
+            }, 500),
+
+            searchCompanies: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    this.$store.dispatch("loadCompanies", query)
+                }
+            }, 500)
 
         },
 
         created: function() {
-            this.$store.dispatch('loadManagers') // dispatch loading
+            this.$store.dispatch("loadManagers");
         }
     }
 </script>
