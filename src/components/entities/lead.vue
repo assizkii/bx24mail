@@ -5,22 +5,33 @@
                 v-model="valid"
                 lazy-validation
         >
+            <!--name-->
             <v-text-field
-                    v-model="name"
+                    v-model="formData.name"
                     :rules="nameRules"
                     label="Имя"
                     required
             ></v-text-field>
 
+            <!--lastname-->
             <v-text-field
-                    v-model="lastname"
+                    v-model="formData.lastname"
                     :rules="lastnameRules"
                     label="Фамилия"
                     required
             ></v-text-field>
 
+            <!--phone-->
+            <v-text-field
+                    v-model="formData.phone"
+                    :mask="phoneMask"
+                    label="Телефон"
+                    required
+            ></v-text-field>
+
+            <!--company-->
             <v-autocomplete
-                    v-model="company"
+                    v-model="formData.company"
                     :items="companies"
                     chips
                     color="blue-grey lighten-2"
@@ -38,7 +49,7 @@
                             :selected="data.selected"
                             close
                             class="chip--select-multi"
-                            @input="company = null"
+                            @input="formData.company = null"
                     >
                         {{ data.item.TITLE }}
                     </v-chip>
@@ -58,8 +69,9 @@
                 </template>
             </v-autocomplete>
 
+            <!--сontacts-->
             <v-autocomplete
-                    v-model="contact"
+                    v-model="formData.contact"
                     :items="contacts"
                     chips
                     color="blue-grey lighten-2"
@@ -77,7 +89,7 @@
                             :selected="data.selected"
                             close
                             class="chip--select-multi"
-                            @input="contact = null"
+                            @input="formData.contact = null"
                     >
                         {{ data.item.FULL_NAME }}
                     </v-chip>
@@ -97,8 +109,9 @@
                 </template>
             </v-autocomplete>
 
+            <!--managers-->
             <v-autocomplete
-                    v-model="responsible"
+                    v-model="formData.responsible"
                     :items="managers"
                     chips
                     color="blue-grey lighten-2"
@@ -114,7 +127,7 @@
                             :selected="data.selected"
                             close
                             class="chip--select-multi"
-                            @input="responsible = null"
+                            @input="formData.responsible = null"
                     >
                         <v-avatar>
                             <img :src="data.item.PERSONAL_PHOTO">
@@ -166,7 +179,9 @@
     import debounce from 'debounce'
 
     export default {
+
         name: 'Lead',
+
         computed: {
             ...mapGetters([
                 'managers',
@@ -177,15 +192,19 @@
         },
 
         data () {
-
             return {
+                formData: {
+                    name: '',
+                    lastname: '',
+                    phone: '',
+                    company: null,
+                    contact: null,
+                    responsible: null,
+                },
+                phoneMask: 'phone',
+
                 userAccess: false,
                 valid: true,
-                name: '',
-                company: null,
-                contact: null,
-                lastname: '',
-                responsible: null,
 
                 nameRules: [
                     v => !!v || 'Имя обязательно'
@@ -194,10 +213,11 @@
                     v => !!v || 'Фамилия обязательна'
                 ],
 
-                checkbox: false
             }
         },
+
         methods: {
+
             validate () {
                 if (this.$refs.form.validate()) {
                     this.snackbar = true
@@ -205,28 +225,34 @@
             },
 
             reset () {
+                this.$store.dispatch("clearData");
                 this.$refs.form.reset()
             },
 
-            setContact (id) {
-                console.log(id)
+            setContact () {
+                let selectContact = this.contacts.filter(contact => contact.ID === this.formData.contact).pop();
+                let payload = {'id': selectContact['COMPANY_ID']};
+                this.$store.dispatch("loadCompanies", payload);
             },
 
-            setCompany (id) {
-                console.log(id)
+            setCompany () {
+                let payload = {'companyId': this.formData.company};
+                this.$store.dispatch("loadContacts", payload);
             },
 
             searchContact: debounce(function (e) {
                 let query = e.target.value;
                 if (query.length > 4) {
-                    this.$store.dispatch("loadContacts", query)
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadContacts", payload)
                 }
             }, 500),
 
             searchCompanies: debounce(function (e) {
                 let query = e.target.value;
                 if (query.length > 4) {
-                    this.$store.dispatch("loadCompanies", query)
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadCompanies", payload)
                 }
             }, 500)
 

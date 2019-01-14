@@ -44,13 +44,21 @@ const mutations = {
 
     changeLoadingState(state, loading) {
         state.loading = loading
-    }
+    },
 
+    clearData(state) {
+        state.contacts = [];
+        state.companies = [];
+    }
 };
 
 // actions are functions that cause side effects and can involve
 // asynchronous operations.
 const actions = {
+
+    clearData({commit}) {
+        commit('clearData')
+    },
 
     setBaseUrl({commit}, url) {
         commit('updateBaseUrl', url)
@@ -86,13 +94,15 @@ const actions = {
     },
 
     // load contacts list
-    loadContacts: async (context, query) => {
+    loadContacts: async (context, payload) => {
         context.commit('changeLoadingState', true);
         let params = {
-            select: ['ID', 'NAME', 'LAST_NAME'],
-            filter: { '%LAST_NAME': query, }
+            select: ['ID', 'NAME', 'LAST_NAME', 'COMPANY_ID'],
+            filter: { '%LAST_NAME': payload.query }
         };
-
+        if (payload.companyId !== undefined) {
+            params.filter['COMPANY_ID'] = payload.companyId;
+        }
         await axios.post(state.baseUrl+'/crm.contact.list.json', params).then(response => {
             context.commit('updateContacts', response.data.result);
             context.commit('changeLoadingState', false)
@@ -100,20 +110,21 @@ const actions = {
     },
 
     // load companies list
-    loadCompanies: async (context, query) => {
+    loadCompanies: async (context, payload) => {
         context.commit('changeLoadingState', true);
         let params = {
             select: ['TITLE', 'ID'],
-            filter: { '%TITLE': query, }
+            filter: { '%TITLE': payload.query }
         };
 
+        if (payload.id !== undefined) {
+            params.filter['ID'] = payload.id;
+        }
         await axios.post(state.baseUrl+'/crm.company.list.json', params).then(response => {
             context.commit('updateCompanies', response.data.result);
             context.commit('changeLoadingState', false)
         })
     }
-
-
 
 };
 
