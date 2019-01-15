@@ -14,6 +14,14 @@
                     required
             ></v-text-field>
 
+            <v-textarea
+                    solo
+                    v-model="formData.description"
+                    label="Описание задачи"
+            >
+
+            </v-textarea>
+
             <!--company-->
             <v-autocomplete
                     v-bind:disabled="formData.contact"
@@ -185,7 +193,8 @@
                     contact: null,
                     responsible: null,
                     type: null,
-                    direction: null
+                    direction: null,
+                    description: ''
                 },
 
                 userAccess: false,

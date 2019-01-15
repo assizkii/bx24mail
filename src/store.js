@@ -10,6 +10,8 @@ Vue.use(Vuex);
 // root state object.
 // each Vuex instance is just a single state tree.
 const state = {
+    email : 'n-kis@bitrix24.ru',
+    leads: [],
     loading: true,
     managers: [],
     baseUrl: '',
@@ -49,6 +51,14 @@ const mutations = {
     clearData(state) {
         state.contacts = [];
         state.companies = [];
+    },
+
+    updateEmail(state, email) {
+        state.email = email
+    },
+
+    updateLeads(state, leads) {
+        state.lead = leads
     }
 };
 
@@ -63,6 +73,33 @@ const actions = {
     setBaseUrl({commit}, url) {
         commit('updateBaseUrl', url)
     },
+
+    setEmail({commit}, email) {
+        commit('updateEmail', email)
+    },
+
+    init: async (context) => {
+
+        context.commit('changeLoadingState', true);
+
+        let params = {
+            select: ['ID', 'NAME', 'LAST_NAME'],
+            filter: { 'EMAIL': state.email}
+        };
+
+        await axios.post(state.baseUrl+'/crm.contact.list.json', params).then(response => {
+            context.commit('updateContacts', response.data.result);
+        })
+
+        await axios.post(state.baseUrl+'/crm.company.list.json', params).then(response => {
+            context.commit('updateCompanies', response.data.result);
+        })
+
+        await axios.post(state.baseUrl+'/crm.lead.list.json', params).then(response => {
+            context.commit('updateLeads', response.data.result);
+        })
+    },
+
 
     // load hook scope
     loadScope: async (context) => {
@@ -159,6 +196,14 @@ const getters = {
 
     companies(state) {
         return state.companies
+    },
+
+    leads(state) {
+        return state.leads
+    },
+
+    email(state) {
+        return state.email
     },
 };
 

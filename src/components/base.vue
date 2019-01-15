@@ -10,12 +10,15 @@
             <v-list dense>
                 <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Lead')">
                     <v-list-tile-action>
-                        <v-badge right  color="purple" >
-                            <v-icon
+                        <v-badge right  color="primary">
+                            <span slot="badge" v-if="leads.length">
+                                {{leads.length}}
+                              </span>
+                            <v-icon v-if="leads.length"
                                     slot="badge"
                                     dark
                                     small
-                            >done</v-icon>
+                            ></v-icon>
                             <v-icon large>accessibility</v-icon>
                         </v-badge>
                     </v-list-tile-action>
@@ -25,15 +28,35 @@
                 </v-list-tile>
                 <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Contact')">
                     <v-list-tile-action>
-                        <v-icon large>account_box</v-icon>
+                        <v-badge right  color="primary">
+                            <span slot="badge" v-if="contacts.length">
+                                {{contacts.length}}
+                              </span>
+                            <v-icon v-if="contacts.length"
+                                    slot="badge"
+                                    dark
+                                    small
+                            ></v-icon>
+                            <v-icon large>account_box</v-icon>
+                        </v-badge>
                     </v-list-tile-action>
                     <v-list-tile-content>
-                        <v-list-tile-title>Контакт</v-list-tile-title>
+                        <v-list-tile-title>Контакт </v-list-tile-title>
                     </v-list-tile-content>
                 </v-list-tile>
                 <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Company')">
                     <v-list-tile-action>
-                        <v-icon large>supervisor_account</v-icon>
+                        <v-badge right  color="primary">
+                            <span slot="badge" v-if="companies.length">
+                                {{companies.length}}
+                              </span>
+                            <v-icon v-if="companies.length"
+                                    slot="badge"
+                                    dark
+                                    small
+                            ></v-icon>
+                            <v-icon large>supervisor_account</v-icon>
+                        </v-badge>
                     </v-list-tile-action>
                     <v-list-tile-content>
                         <v-list-tile-title>Компания</v-list-tile-title>
@@ -82,7 +105,7 @@
                 <v-layout justify-center align-center>
 
                     <v-flex text-xs-left>
-                        <v-card>
+                        <v-card v-if="selectComponent !== 'Settings'">
                             <v-card-title primary-title>
                                 <div>
                                     <h3 class="headline mb-0">Иванов Иван Викторович</h3>
@@ -112,17 +135,23 @@
     import Task from './entities/task'
     import Settings from './entities/settings'
 
-    import { mapState } from 'vuex'
+    import { mapGetters } from 'vuex'
 
     export default {
         name: 'Base',
+
         components: {
             Lead, Contact, Company, Deal, Quote, Task, Settings
         },
-        computed: mapState({
-            scope: state => state.scope,
-            loading: state => state.loading,
-        }),
+        computed: {
+            ...mapGetters([
+                'scope',
+                'loading',
+                'contacts',
+                'companies',
+                'leads'
+            ])
+        },
         data: () => ({
             drawer: null,
             selectComponent: null,
@@ -139,9 +168,13 @@
         },
 
         created() {
+
             this.$store.dispatch("loadScope").then(() => {
                 if (this.scope.indexOf('crm') !== -1) {
                     this.crmAccess = true;
+                    this.$store.dispatch("init").then(() => {
+                        console.log(this.contacts);
+                    })
                 }
                 if (this.scope.indexOf('task') !== -1) {
                     this.taskAccess = true
