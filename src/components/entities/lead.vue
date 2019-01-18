@@ -5,6 +5,24 @@
                 v-model="valid"
                 lazy-validation
         >
+
+            <v-select
+                    v-if="!newLead && leads.length > 0"
+                    v-model="formData.lead"
+                    :items="leads"
+                    item-text="FULL_NAME"
+                    item-value="ID"
+                    label="Выберите лида"
+                    single-line
+                    @change="getLead"
+            ></v-select>
+
+            <v-switch
+                    v-if="leads.length > 0"
+                    v-model="newLead"
+                    :label="`Создать новый контакт`"
+            ></v-switch>
+
             <!--name-->
             <v-text-field
                     v-model="formData.name"
@@ -187,13 +205,17 @@
                 'managers',
                 'loading',
                 'contacts',
-                'companies'
+                'companies',
+                'leads',
+                'baseUrl'
             ])
         },
 
         data () {
             return {
+                newLead: false,
                 formData: {
+                    lead: null,
                     name: '',
                     lastname: '',
                     phone: '',
@@ -254,7 +276,30 @@
                     let payload = {'query': query};
                     this.$store.dispatch("loadCompanies", payload)
                 }
-            }, 500)
+            }, 500),
+
+            getLead: async function () {
+
+                let params = {
+                    id: this.formData.lead
+                };
+
+                await this.axios.get(this.baseUrl+'/crm.lead.get.json', {params}).then(response => {
+                    let data = response.data.result;
+                    console.log(data);
+
+                    this.formData.name = data.NAME;
+                    this.formData.lastname = data.LAST_NAME;
+                    this.formData.phone = data.PHONE;
+                    this.formData.company = data.COMPANY_ID;
+                    this.formData.contact = data.CONTACT_ID;
+
+                    this.$store.dispatch("loadCompanies", {'id': data.COMPANY_ID});
+                    this.$store.dispatch("loadContact", {'id': data.CONTACT_ID});
+
+                    this.formData.responsible = data.ASSIGNED_BY_ID;
+                })
+            }
 
         },
 

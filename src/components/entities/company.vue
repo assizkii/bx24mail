@@ -5,6 +5,24 @@
                 v-model="valid"
                 lazy-validation
         >
+
+            <v-select
+                    v-if="!newCompany && companies.length > 0"
+                    v-model="formData.company"
+                    :items="companies"
+                    item-text="TITLE"
+                    item-value="ID"
+                    label="Выберите компанию"
+                    single-line
+                    @change="getCompany"
+            ></v-select>
+
+            <v-switch
+                    v-if="companies.length > 0"
+                    v-model="newCompany"
+                    :label="`Создать новую компанию`"
+            ></v-switch>
+
             <!--name-->
             <v-text-field
                     v-model="formData.title"
@@ -95,16 +113,19 @@
             ...mapGetters([
                 'managers',
                 'loading',
+                'companies',
+                'baseUrl'
             ])
         },
 
         data () {
             return {
+                newCompany: false,
                 formData: {
                     title: '',
                     phone: '',
                     company: null,
-                    responsible: null,
+                    responsible: null
                 },
                 phoneMask: 'phone',
 
@@ -129,6 +150,23 @@
             reset () {
                 this.$store.dispatch("clearData");
                 this.$refs.form.reset()
+            },
+
+            getCompany: async function () {
+
+                let params = {
+                    id: this.formData.company
+                };
+
+                await this.axios.get(this.baseUrl+'/crm.company.get.json', {params}).then(response => {
+                    let data = response.data.result;
+                    this.formData.title = data.TITLE;
+                    this.formData.phone = data.PHONE;
+                    // let payload = {'id': data.COMPANY_ID};
+                    // this.$store.dispatch("loadCompanies", payload);
+
+                    this.formData.responsible = data.ASSIGNED_BY_ID;
+                })
             }
 
         },

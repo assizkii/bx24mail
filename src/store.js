@@ -17,7 +17,12 @@ const state = {
     baseUrl: '',
     scope: [],
     contacts: [],
-    companies: []
+    companies: [],
+    counter: {
+        leads:0,
+        companies:0,
+        contacts:0
+    }
 };
 
 // mutations are operations that actually mutates the state.
@@ -58,7 +63,19 @@ const mutations = {
     },
 
     updateLeads(state, leads) {
-        state.lead = leads
+        state.leads = leads
+    },
+
+    updateCounter(state, countInfo) {
+        if (countInfo.leads) {
+            state.counter.leads = countInfo.leads;
+        }
+        if (countInfo.contacts) {
+            state.counter.contacts = countInfo.contacts;
+        }
+        if (countInfo.companies) {
+            state.counter.companies = countInfo.companies
+        }
     }
 };
 
@@ -89,14 +106,17 @@ const actions = {
 
         await axios.post(state.baseUrl+'/crm.contact.list.json', params).then(response => {
             context.commit('updateContacts', response.data.result);
+            context.commit('updateCounter', {contacts: response.data.result.length});
         })
 
         await axios.post(state.baseUrl+'/crm.company.list.json', params).then(response => {
             context.commit('updateCompanies', response.data.result);
+            context.commit('updateCounter', {companies: response.data.result.length});
         })
 
         await axios.post(state.baseUrl+'/crm.lead.list.json', params).then(response => {
             context.commit('updateLeads', response.data.result);
+            context.commit('updateCounter', {leads: response.data.result.length});
         })
     },
 
@@ -199,11 +219,20 @@ const getters = {
     },
 
     leads(state) {
-        return state.leads
+        return  state.leads
+        // .filter(contact => contact.NAME)
+            .map( (lead) => {
+                lead.FULL_NAME = lead.NAME + " " +lead.LAST_NAME
+                return lead
+            });
     },
 
     email(state) {
         return state.email
+    },
+
+    counter(state) {
+        return state.counter
     },
 };
 

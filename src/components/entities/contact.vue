@@ -19,6 +19,7 @@
             ></v-select>
 
             <v-switch
+                    v-if="contacts.length > 0"
                     v-model="newContact"
                     :label="`Создать новый контакт`"
             ></v-switch>

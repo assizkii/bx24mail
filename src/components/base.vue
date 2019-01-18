@@ -11,10 +11,10 @@
                 <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Lead')">
                     <v-list-tile-action>
                         <v-badge right  color="primary">
-                            <span slot="badge" v-if="leads.length">
-                                {{leads.length}}
+                            <span slot="badge" v-if="counter.leads > 0">
+                                {{counter.leads}}
                               </span>
-                            <v-icon v-if="leads.length"
+                            <v-icon v-if="counter.leads"
                                     slot="badge"
                                     dark
                                     small
@@ -29,10 +29,10 @@
                 <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Contact')">
                     <v-list-tile-action>
                         <v-badge right  color="primary">
-                            <span slot="badge" v-if="contacts.length">
-                                {{contacts.length}}
+                            <span slot="badge" v-if="counter.contacts > 0">
+                                {{counter.contacts}}
                               </span>
-                            <v-icon v-if="contacts.length"
+                            <v-icon v-if="counter.contacts > 0"
                                     slot="badge"
                                     dark
                                     small
@@ -47,10 +47,10 @@
                 <v-list-tile v-if='crmAccess' v-on:click="changeComponent('Company')">
                     <v-list-tile-action>
                         <v-badge right  color="primary">
-                            <span slot="badge" v-if="companies.length">
-                                {{companies.length}}
+                            <span slot="badge" v-if="counter.companies > 0">
+                                {{counter.companies}}
                               </span>
-                            <v-icon v-if="companies.length"
+                            <v-icon v-if="counter.companies > 0"
                                     slot="badge"
                                     dark
                                     small
@@ -149,7 +149,8 @@
                 'loading',
                 'contacts',
                 'companies',
-                'leads'
+                'leads',
+                'counter'
             ])
         },
         data: () => ({
@@ -173,7 +174,7 @@
                 if (this.scope.indexOf('crm') !== -1) {
                     this.crmAccess = true;
                     this.$store.dispatch("init").then(() => {
-                        console.log(this.contacts);
+                        console.log(this.counter.leads);
                     })
                 }
                 if (this.scope.indexOf('task') !== -1) {
