@@ -92,6 +92,7 @@
                     label="Менеджер"
                     item-text="FULL_NAME"
                     item-value="ID"
+                    @keyup="searchManager"
             >
                 <template
                         slot="selection"
@@ -136,13 +137,6 @@
                 Отправить в CRM
             </v-btn>
 
-            <v-btn
-                    color="error"
-                    @click="reset"
-            >
-                Очистить
-            </v-btn>
-
         </v-form>
     </v-app>
 </template>
@@ -159,6 +153,7 @@
                 'managers',
                 'baseUrl',
                 'loading',
+                'email',
                 'companies',
                 'contacts'
             ])
@@ -194,13 +189,9 @@
 
             validate () {
                 if (this.$refs.form.validate()) {
-                    this.snackbar = true
+                    this.snackbar = true;
+                    this.sendForm()
                 }
-            },
-
-            reset () {
-                this.$store.dispatch("clearData");
-                this.$refs.form.reset()
             },
 
             searchCompanies: debounce(function (e) {
@@ -211,7 +202,18 @@
                 }
             }, 500),
 
-            getContact: async function () {
+
+            searchManager: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadManagers", payload)
+                }
+            }, 500),
+
+            getContact: async function (id) {
+
+                this.formData.contact = id;
 
                 let params = {
                     id: this.formData.contact
@@ -229,11 +231,46 @@
 
                     this.formData.responsible = data.ASSIGNED_BY_ID;
                 })
-            }
-        },
+            },
 
-        created: function() {
-            this.$store.dispatch("loadManagers");
+            sendForm: async function () {
+
+                let method = 'crm.contact.add.json';
+
+                let params = {
+                    fields: {
+                        'NAME'  : this.formData.name,
+                        'LAST_NAME' : this.formData.lastname,
+                        'EMAIL':  [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.email
+                            }
+                        ],
+                        'PHONE': [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.formData.phone
+                            }
+                        ],
+                        'COMPANY_IDS' : [this.formData.company],
+                        'ASSIGNED_BY_ID' : this.formData.responsible
+                    }
+                };
+                if (this.newContact === false) {
+                    method = 'crm.contact.update.json';
+                    params['ID'] = this.formData.contact;
+
+                }
+
+                await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
+                    let data = response.data.result;
+                    if (this.newContact !== false) {
+                       this.getContact(data.result)
+                    }
+                })
+            }
+
         }
     }
 </script>

@@ -14,13 +14,7 @@
                     required
             ></v-text-field>
 
-            <!--phone-->
-            <v-text-field
-                    v-model="formData.phone"
-                    :mask="phoneMask"
-                    label="Телефон"
-                    required
-            ></v-text-field>
+
 
             <!--company-->
             <v-autocomplete
@@ -111,6 +105,7 @@
                     label="Менеджер"
                     item-text="FULL_NAME"
                     item-value="ID"
+                    @keyup="searchManager"
             >
                 <template
                         slot="selection"
@@ -147,19 +142,20 @@
                 </template>
             </v-autocomplete>
 
+            <v-textarea
+                    solo
+                    v-model="formData.comments"
+                    label="Комментарий"
+            >
+
+            </v-textarea>
+
             <v-btn
                     :disabled="!valid"
                     color="success"
                     @click="validate"
             >
                 Отправить в CRM
-            </v-btn>
-
-            <v-btn
-                    color="error"
-                    @click="reset"
-            >
-                Очистить
             </v-btn>
 
         </v-form>
@@ -187,12 +183,12 @@
 
                 formData: {
                     title: '',
-                    phone: '',
                     company: null,
                     contact: null,
                     responsible: null,
                     type: null,
-                    direction: null
+                    direction: null,
+                    comments: null
                 },
 
                 phoneMask: 'phone',
@@ -212,13 +208,9 @@
 
             validate () {
                 if (this.$refs.form.validate()) {
-                    this.snackbar = true
+                    this.snackbar = true;
+                    this.sendForm();
                 }
-            },
-
-            reset () {
-                this.$store.dispatch("clearData");
-                this.$refs.form.reset()
             },
 
             setContact () {
@@ -246,12 +238,43 @@
                     let payload = {'query': query};
                     this.$store.dispatch("loadCompanies", payload)
                 }
-            }, 500)
+            }, 500),
 
-        },
+            searchManager: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadManagers", payload)
+                }
+            }, 500),
 
-        created: function() {
-            this.$store.dispatch("loadManagers");
+            sendForm: async function () {
+
+                let method = 'crm.deal.add.json';
+
+                let params = {
+
+                    fields: {
+                        'TITLE'  : this.formData.title,
+                        'EMAIL':  [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.email
+                            }
+                        ],
+                        'COMPANY_ID' : this.formData.company,
+                        'CONTACT_IDS' : [this.formData.contact],
+                        'ASSIGNED_BY_ID' : this.formData.responsible,
+                        'COMMENTS': this.formData.comments
+                    }
+
+                };
+
+                await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
+                    let data = response.data.result;
+                })
+            }
+
         }
     }
 </script>

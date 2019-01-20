@@ -47,86 +47,6 @@
                     required
             ></v-text-field>
 
-            <!--company-->
-            <v-autocomplete
-                    v-model="formData.company"
-                    :items="companies"
-                    chips
-                    color="blue-grey lighten-2"
-                    label="Компания"
-                    item-text="TITLE"
-                    item-value="ID"
-                    @input="setCompany"
-                    @keyup="searchCompanies"
-            >
-                <template
-                        slot="selection"
-                        slot-scope="data"
-                >
-                    <v-chip
-                            :selected="data.selected"
-                            close
-                            class="chip--select-multi"
-                            @input="formData.company = null"
-                    >
-                        {{ data.item.TITLE }}
-                    </v-chip>
-                </template>
-                <template
-                        slot="item"
-                        slot-scope="data"
-                >
-                    <template v-if="typeof data.item !== 'object'">
-                        <v-list-tile-content v-text="data.item"></v-list-tile-content>
-                    </template>
-                    <template v-else>
-                        <v-list-tile-content>
-                            <v-list-tile-title v-html="data.item.TITLE"></v-list-tile-title>
-                        </v-list-tile-content>
-                    </template>
-                </template>
-            </v-autocomplete>
-
-            <!--сontacts-->
-            <v-autocomplete
-                    v-model="formData.contact"
-                    :items="contacts"
-                    chips
-                    color="blue-grey lighten-2"
-                    label="Контакт"
-                    item-text="FULL_NAME"
-                    item-value="ID"
-                    @input="setContact"
-                    @keyup="searchContact"
-            >
-                <template
-                        slot="selection"
-                        slot-scope="data"
-                >
-                    <v-chip
-                            :selected="data.selected"
-                            close
-                            class="chip--select-multi"
-                            @input="formData.contact = null"
-                    >
-                        {{ data.item.FULL_NAME }}
-                    </v-chip>
-                </template>
-                <template
-                        slot="item"
-                        slot-scope="data"
-                >
-                    <template v-if="typeof data.item !== 'object'">
-                        <v-list-tile-content v-text="data.item"></v-list-tile-content>
-                    </template>
-                    <template v-else>
-                        <v-list-tile-content>
-                            <v-list-tile-title v-html="data.item.FULL_NAME"></v-list-tile-title>
-                        </v-list-tile-content>
-                    </template>
-                </template>
-            </v-autocomplete>
-
             <!--managers-->
             <v-autocomplete
                     v-model="formData.responsible"
@@ -136,6 +56,7 @@
                     label="Менеджер"
                     item-text="FULL_NAME"
                     item-value="ID"
+                    @keyup="searchManager"
             >
                 <template
                         slot="selection"
@@ -180,13 +101,6 @@
                 Отправить в CRM
             </v-btn>
 
-            <v-btn
-                    color="error"
-                    @click="reset"
-            >
-                Очистить
-            </v-btn>
-
         </v-form>
     </v-app>
 </template>
@@ -204,10 +118,9 @@
             ...mapGetters([
                 'managers',
                 'loading',
-                'contacts',
-                'companies',
                 'leads',
-                'baseUrl'
+                'baseUrl',
+                'email'
             ])
         },
 
@@ -219,8 +132,6 @@
                     name: '',
                     lastname: '',
                     phone: '',
-                    company: null,
-                    contact: null,
                     responsible: null,
                 },
                 phoneMask: 'phone',
@@ -242,43 +153,14 @@
 
             validate () {
                 if (this.$refs.form.validate()) {
-                    this.snackbar = true
+                    this.snackbar = true;
+                    this.sendForm()
                 }
             },
 
-            reset () {
-                this.$store.dispatch("clearData");
-                this.$refs.form.reset()
-            },
+            getLead: async function (id) {
 
-            setContact () {
-                let selectContact = this.contacts.filter(contact => contact.ID === this.formData.contact).pop();
-                let payload = {'id': selectContact['COMPANY_ID']};
-                this.$store.dispatch("loadCompanies", payload);
-            },
-
-            setCompany () {
-                let payload = {'companyId': this.formData.company};
-                this.$store.dispatch("loadContacts", payload);
-            },
-
-            searchContact: debounce(function (e) {
-                let query = e.target.value;
-                if (query.length > 4) {
-                    let payload = {'query': query};
-                    this.$store.dispatch("loadContacts", payload)
-                }
-            }, 500),
-
-            searchCompanies: debounce(function (e) {
-                let query = e.target.value;
-                if (query.length > 4) {
-                    let payload = {'query': query};
-                    this.$store.dispatch("loadCompanies", payload)
-                }
-            }, 500),
-
-            getLead: async function () {
+                this.formData.lead = id;
 
                 let params = {
                     id: this.formData.lead
@@ -290,21 +172,65 @@
 
                     this.formData.name = data.NAME;
                     this.formData.lastname = data.LAST_NAME;
-                    this.formData.phone = data.PHONE;
-                    this.formData.company = data.COMPANY_ID;
-                    this.formData.contact = data.CONTACT_ID;
 
-                    this.$store.dispatch("loadCompanies", {'id': data.COMPANY_ID});
-                    this.$store.dispatch("loadContact", {'id': data.CONTACT_ID});
+                    data.PHONE.map((phone) => {
+                        if (phone.VALUE_TYPE === 'WORK') {
+                            this.formData.phone = phone.VALUE
+                        }
+                    });
 
                     this.formData.responsible = data.ASSIGNED_BY_ID;
                 })
-            }
+            },
 
-        },
+            sendForm: async function () {
 
-        created: function() {
-            this.$store.dispatch("loadManagers");
+                let method = 'crm.lead.add.json';
+
+                let params = {
+                    fields: {
+                        'TITLE' : this.formData.name +' ' +this.formData.lastname,
+                        'NAME'  : this.formData.name,
+                        'LAST_NAME' : this.formData.lastname,
+                        'EMAIL':  [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.email
+                            }
+                        ],
+                        'PHONE': [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.formData.phone
+                            }
+                        ],
+                        'ASSIGNED_BY_ID' : this.formData.responsible
+                    }
+                };
+                if (this.newLead === false) {
+                    method = 'crm.lead.update.json';
+                    params['ID'] = this.formData.lead;
+
+                }
+                await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
+
+                    let data = response.data.result;
+
+                    if (this.newLead !== false) {
+                        this.getLead(data.result)
+                    }
+                })
+            },
+
+            searchManager: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadManagers", payload)
+                }
+            }, 500),
+
         }
+
     }
 </script>
