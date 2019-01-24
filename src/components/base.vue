@@ -148,6 +148,7 @@
         components: {
             Lead, Contact, Company, Deal, Quote, Task, Settings, Browser
         },
+
         computed: {
             ...mapGetters([
                 'scope',
@@ -158,6 +159,7 @@
                 'counter'
             ])
         },
+
         data: () => ({
             mini: true,
             drawer: true,
@@ -165,11 +167,13 @@
             crmAccess: false,
             taskAccess: false,
         }),
+
         methods: {
             changeComponent: function (componentName) {
                 this.selectComponent = componentName;
             },
         },
+
         mounted() {
 
         },

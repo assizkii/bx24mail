@@ -22,9 +22,32 @@
 
             </v-textarea>
 
+
+            <v-dialog
+                    ref="dialog"
+                    v-model="modal"
+                    :return-value.sync="date"
+                    persistent
+                    lazy
+                    full-width
+                    width="290px"
+            >
+                <v-text-field
+                        slot="activator"
+                        v-model="formData.deadline"
+                        label="Крайний срок"
+                        prepend-icon="event"
+                        readonly
+                ></v-text-field>
+                <v-date-picker v-model="date" scrollable  locale="ru-RU">
+                    <v-spacer></v-spacer>
+                    <v-btn flat color="primary" @click="modal = false">Отмена</v-btn>
+                    <v-btn flat color="primary" @click="$refs.dialog.save(date)">Ок</v-btn>
+                </v-date-picker>
+            </v-dialog>
+
             <!--company-->
             <v-autocomplete
-                    v-bind:disabled="formData.contact"
                     v-model="formData.company"
                     :items="companies"
                     chips
@@ -32,7 +55,6 @@
                     label="Компания"
                     item-text="TITLE"
                     item-value="ID"
-                    @input="setCompany"
                     @keyup="searchCompanies"
             >
                 <template
@@ -65,7 +87,6 @@
 
             <!--сontacts-->
             <v-autocomplete
-                    v-bind:disabled="formData.company"
                     v-model="formData.contact"
                     :items="contacts"
                     chips
@@ -73,7 +94,6 @@
                     label="Контакт"
                     item-text="FULL_NAME"
                     item-value="ID"
-                    @input="setContact"
                     @keyup="searchContact"
             >
                 <template
@@ -89,6 +109,7 @@
                         {{ data.item.FULL_NAME }}
                     </v-chip>
                 </template>
+
                 <template
                         slot="item"
                         slot-scope="data"
@@ -102,6 +123,7 @@
                         </v-list-tile-content>
                     </template>
                 </template>
+
             </v-autocomplete>
 
             <!--managers-->
@@ -113,6 +135,7 @@
                     label="Менеджер"
                     item-text="FULL_NAME"
                     item-value="ID"
+                    @keyup="searchManager"
             >
                 <template
                         slot="selection"
@@ -157,13 +180,6 @@
                 Отправить в CRM
             </v-btn>
 
-            <v-btn
-                    color="error"
-                    @click="reset"
-            >
-                Очистить
-            </v-btn>
-
         </v-form>
     </v-app>
 </template>
@@ -180,21 +196,24 @@
                 'managers',
                 'loading',
                 'contacts',
-                'companies'
+                'companies',
+                'baseUrl'
             ])
         },
 
         data () {
             return {
 
+                date: new Date().toISOString().substr(0, 10),
+
+                modal: false,
                 formData: {
                     title: '',
                     company: null,
                     contact: null,
                     responsible: null,
-                    type: null,
-                    direction: null,
-                    description: ''
+                    description: '',
+                    deadline:  this.formatDate(new Date().toISOString().substr(0, 10)),
                 },
 
                 userAccess: false,
@@ -208,26 +227,35 @@
             }
         },
 
+        watch: {
+            date (val) {
+                this.formData.deadline = this.formatDate(this.date)
+            }
+        },
+
         methods: {
 
             validate () {
                 if (this.$refs.form.validate()) {
-                    this.snackbar = true
+                    this.snackbar = true;
+                    this.sendForm();
                 }
             },
 
-            reset () {
-                this.$store.dispatch("clearData");
-                this.$refs.form.reset()
+            formatDate (date) {
+                if (!date) return null;
+
+                const [year, month, day] = date.split('-');
+                return `${day}.${month}.${year}`
             },
 
-            setContact () {
-                this.formData.company = null;
-            },
-
-            setCompany () {
-                this.formData.contact = null;
-            },
+            searchManager: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadManagers", payload)
+                }
+            }, 500),
 
             searchContact: debounce(function (e) {
                 let query = e.target.value;
@@ -243,12 +271,34 @@
                     let payload = {'query': query};
                     this.$store.dispatch("loadCompanies", payload)
                 }
-            }, 500)
+            }, 500),
+
+            sendForm: async function () {
+
+                let method = 'task.item.add.json';
+
+                let params = [{
+                    'TITLE' : this.formData.title,
+                    'DESCRIPTION': this.formData.description,
+                    'DEADLINE': this.formData.deadline,
+                    'UF_CRM_TASK' : [
+                        'C_'+this.formData.contact,
+                        'CO_'+this.formData.company
+                    ],
+                    'RESPONSIBLE_ID' : this.formData.responsible
+
+                }];
+
+                await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
+                    let data = response.data.result;
+                    this.$refs.form.reset()
+                })
+            }
 
         },
 
         created: function() {
-            this.$store.dispatch("loadManagers");
+
         }
     }
 </script>

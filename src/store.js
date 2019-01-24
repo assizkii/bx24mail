@@ -136,18 +136,18 @@ const actions = {
     },
 
     // load managers list
-    loadManagers: async (context) => {
+    loadManagers: async (context, payload) => {
 
-        if (!state.managers.length) {
-            context.commit('changeLoadingState', true);
-            let params = {
-                ACTIVE : 'Y'
-            };
-            await axios.get(state.baseUrl+'/user.get.json', {params}).then(response => {
-                context.commit('updateManagers', response.data.result);
-                context.commit('changeLoadingState', false)
-            })
-        }
+        context.commit('changeLoadingState', true);
+        let params = {
+            ACTIVE : 'Y',
+            FIND : payload.query
+        };
+        await axios.get(state.baseUrl+'/user.search.json', {params}).then(response => {
+            context.commit('updateManagers', response.data.result);
+            context.commit('changeLoadingState', false)
+        })
+
     },
 
     // load contacts list
@@ -198,7 +198,6 @@ const getters = {
 
     managers(state) {
       return  state.managers
-          .filter(manager => manager.PERSONAL_PHOTO)
           .map( (manager) => {
                 manager.FULL_NAME = manager.NAME + " " +manager.LAST_NAME
                 return manager

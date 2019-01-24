@@ -39,6 +39,8 @@
                     required
             ></v-text-field>
 
+
+            <!--managers-->
             <v-autocomplete
                     v-model="formData.responsible"
                     :items="managers"
@@ -47,6 +49,7 @@
                     label="Менеджер"
                     item-text="FULL_NAME"
                     item-value="ID"
+                    @keyup="searchManager"
             >
                 <template
                         slot="selection"
@@ -89,13 +92,6 @@
                     @click="validate"
             >
                 Отправить в CRM
-            </v-btn>
-
-            <v-btn
-                    color="error"
-                    @click="reset"
-            >
-                Очистить
             </v-btn>
 
         </v-form>
@@ -142,37 +138,91 @@
         methods: {
 
             validate () {
+
                 if (this.$refs.form.validate()) {
-                    this.snackbar = true
+                    this.snackbar = true;
+                    this.sendForm();
                 }
+
             },
 
-            reset () {
-                this.$store.dispatch("clearData");
-                this.$refs.form.reset()
-            },
+            searchManager: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadManagers", payload)
+                }
+            }, 500),
 
-            getCompany: async function () {
+            getCompany: async function (id) {
+
+                this.formData.contact = id;
 
                 let params = {
-                    id: this.formData.company
+                    id: this.formData.contact
                 };
 
                 await this.axios.get(this.baseUrl+'/crm.company.get.json', {params}).then(response => {
+
                     let data = response.data.result;
                     this.formData.title = data.TITLE;
                     this.formData.phone = data.PHONE;
+
                     // let payload = {'id': data.COMPANY_ID};
                     // this.$store.dispatch("loadCompanies", payload);
 
                     this.formData.responsible = data.ASSIGNED_BY_ID;
+
+                })
+            },
+
+            sendForm: async function () {
+
+                let method = 'crm.company.add.json';
+
+                let params = {
+
+                    fields: {
+
+                        'TITLE'  : this.formData.title,
+
+                        'EMAIL':  [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.email
+                            }
+                        ],
+
+                        'PHONE': [
+                            {
+                                'VALUE_TYPE' : 'WORK',
+                                'VALUE' : this.formData.phone
+                            }
+                        ],
+
+                        'ASSIGNED_BY_ID' : this.formData.responsible
+                    }
+
+                };
+
+                if (this.newCompany === false) {
+
+                    method = 'crm.company.update.json';
+                    params['ID'] = this.formData.contact;
+
+                }
+
+                await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
+
+                    let data = response.data.result;
+
+                    if (this.newCompany !== false) {
+                        this.getCompany(data.result)
+                    }
+
                 })
             }
 
-        },
-
-        created: function() {
-            this.$store.dispatch("loadManagers");
         }
     }
 </script>

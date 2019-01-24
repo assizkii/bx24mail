@@ -105,6 +105,7 @@
                     label="Менеджер"
                     item-text="FULL_NAME"
                     item-value="ID"
+                    @keyup="searchManager"
             >
                 <template
                         slot="selection"
@@ -234,12 +235,16 @@
                     let payload = {'query': query};
                     this.$store.dispatch("loadCompanies", payload)
                 }
-            }, 500)
+            }, 500),
 
-        },
+            searchManager: debounce(function (e) {
+                let query = e.target.value;
+                if (query.length > 4) {
+                    let payload = {'query': query};
+                    this.$store.dispatch("loadManagers", payload)
+                }
+            }, 500),
 
-        created: function() {
-            this.$store.dispatch("loadManagers");
         }
     }
 </script>
