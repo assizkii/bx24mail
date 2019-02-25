@@ -1,11 +1,26 @@
 <template>
     <v-app id="deal">
+
+
+
         <v-form
                 ref="form"
                 v-model="valid"
                 lazy-validation
         >
+            <v-alert
+                    :value="saveSuccess"
+                    type="success"
+                    transition="scale-transition"
+                    outline
+                    class="my-3"
+            >
+                Сделка успешно создана.     <v-btn target="_blank" :href="dealLink" color="success">Открыть</v-btn>
+            </v-alert>
 
+            <div>
+
+            </div>
             <!--name-->
             <v-text-field
                     v-model="formData.title"
@@ -14,7 +29,19 @@
                     required
             ></v-text-field>
 
+            <v-select
+                    v-model="formData.group"
+                    v-if="dealGoodsGroup.length > 0"
+                    :items="dealGoodsGroup"
+                    label="Товарная группа"
+            ></v-select>
 
+            <v-select
+                    v-model="formData.direction"
+                    v-if="dealDirections.length > 0"
+                    :items="dealDirections"
+                    label="Направление"
+            ></v-select>
 
             <!--company-->
             <v-autocomplete
@@ -171,22 +198,26 @@
 
         computed: {
             ...mapGetters([
+                'baseUrl',
                 'managers',
                 'loading',
                 'contacts',
-                'companies'
+                'companies',
+                'dealGoodsGroup',
+                'dealDirections'
             ])
         },
 
         data () {
             return {
-
+                saveSuccess: false,
+                dealLink: null,
                 formData: {
                     title: '',
                     company: null,
                     contact: null,
                     responsible: null,
-                    type: null,
+                    group: null,
                     direction: null,
                     comments: null
                 },
@@ -265,16 +296,26 @@
                         'COMPANY_ID' : this.formData.company,
                         'CONTACT_IDS' : [this.formData.contact],
                         'ASSIGNED_BY_ID' : this.formData.responsible,
-                        'COMMENTS': this.formData.comments
+                        'COMMENTS': this.formData.comments,
+                        'TYPE_ID': this.formData.direction
                     }
 
                 };
 
+                // set good groups
+                if (this.formData.group) {
+                    params.fields['UF_CRM_1543215939'] = this.formData.group;
+                }
+
                 await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
-                    let data = response.data.result;
+                    if (response.data.result) {
+                        this.dealLink = localStorage.baseUrl+'/crm/deal/show/'+response.data.result+'/';
+                        this.saveSuccess = true;
+                    }
                 })
             }
 
         }
+
     }
 </script>

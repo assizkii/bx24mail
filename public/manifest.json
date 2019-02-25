@@ -1,0 +1,43 @@
+{
+  "name": "BX24 Gmail",
+  "permissions": [
+    "activeTab",
+    "*://mail.google.com/*",
+    "identity",
+    "browsingData",
+    "storage",
+    "windows",
+    "webNavigation"
+  ],
+  "description": "A web extension for work with bitrix24 crm system from Gmail",
+  "version": "1.0.0",
+  "manifest_version": 2,
+  "icons": {
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false,
+    "run_at": "document_end"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "*://mail.google.com/*"
+      ],
+
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    "index.html"
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'"
+}

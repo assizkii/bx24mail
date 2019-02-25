@@ -11,6 +11,7 @@ Vue.use(Vuex);
 // each Vuex instance is just a single state tree.
 const state = {
     email : 'n-kis@bitrix24.ru',
+    name: '',
     leads: [],
     loading: true,
     managers: [],
@@ -22,7 +23,9 @@ const state = {
         leads:0,
         companies:0,
         contacts:0
-    }
+    },
+    dealGoodsGroup: [],
+    dealDirections: []
 };
 
 // mutations are operations that actually mutates the state.
@@ -62,21 +65,34 @@ const mutations = {
         state.email = email
     },
 
+    updateName(state, name) {
+        state.name = name
+    },
+
     updateLeads(state, leads) {
         state.leads = leads
     },
 
     updateCounter(state, countInfo) {
-        if (countInfo.leads) {
+        if (countInfo.leads !== undefined ) {
             state.counter.leads = countInfo.leads;
         }
-        if (countInfo.contacts) {
+        if (countInfo.contacts !== undefined) {
             state.counter.contacts = countInfo.contacts;
         }
-        if (countInfo.companies) {
+        if (countInfo.companies !== undefined) {
             state.counter.companies = countInfo.companies
         }
-    }
+    },
+
+    getDealGoodsGroup(state, groups) {
+        state.dealGoodsGroup = groups
+    },
+
+    getDealDirections(state, directions) {
+        state.dealDirections = directions
+    },
+
 };
 
 // actions are functions that cause side effects and can involve
@@ -95,31 +111,34 @@ const actions = {
         commit('updateEmail', email)
     },
 
+    setName ({commit}, name) {
+        commit('updateName', name)
+    },
+
     init: async (context) => {
 
         context.commit('changeLoadingState', true);
 
         let params = {
-            select: ['ID', 'NAME', 'LAST_NAME'],
+            select: ['ID', 'NAME', 'LAST_NAME', 'TITLE'],
             filter: { 'EMAIL': state.email}
         };
 
         await axios.post(state.baseUrl+'/crm.contact.list.json', params).then(response => {
             context.commit('updateContacts', response.data.result);
             context.commit('updateCounter', {contacts: response.data.result.length});
-        })
+        });
 
         await axios.post(state.baseUrl+'/crm.company.list.json', params).then(response => {
             context.commit('updateCompanies', response.data.result);
             context.commit('updateCounter', {companies: response.data.result.length});
-        })
+        });
 
         await axios.post(state.baseUrl+'/crm.lead.list.json', params).then(response => {
             context.commit('updateLeads', response.data.result);
             context.commit('updateCounter', {leads: response.data.result.length});
         })
     },
-
 
     // load hook scope
     loadScope: async (context) => {
@@ -148,6 +167,19 @@ const actions = {
             context.commit('changeLoadingState', false)
         })
 
+    },
+
+    loadUser: async (context, payload) => {
+        context.commit('changeLoadingState', true);
+        let params = {
+            select: ['ID', 'NAME', 'LAST_NAME'],
+            filter: { 'ID': payload.id }
+        };
+
+        await axios.post(state.baseUrl+'/user.get', params).then(response => {
+            context.commit('updateManagers', response.data.result);
+            context.commit('changeLoadingState', false)
+        })
     },
 
     // load contacts list
@@ -181,6 +213,36 @@ const actions = {
             context.commit('updateCompanies', response.data.result);
             context.commit('changeLoadingState', false)
         })
+    },
+
+    loadDealGoodGroups: async (context) => {
+
+        if (!state.dealGoodsGroup.length) {
+            context.commit('changeLoadingState', true);
+
+            let params = {
+                id : '897',
+            };
+
+            await axios.post(state.baseUrl+'/crm.deal.userfield.get.json', params).then(response => {
+                context.commit('getDealGoodsGroup', response.data.result);
+            })
+        }
+    },
+
+    loadDealDirections: async (context) => {
+        if (!state.dealDirections.length) {
+            context.commit('changeLoadingState', true);
+
+            let params = {
+                select : ['STATUS_ID', 'NAME'],
+                filter: { 'ENTITY_ID': 'DEAL_TYPE' }
+            };
+
+            await axios.post(state.baseUrl+'/crm.status.list.json', params).then(response => {
+                context.commit('getDealDirections', response.data.result);
+            })
+        }
     }
 
 };
@@ -230,9 +292,37 @@ const getters = {
         return state.email
     },
 
+    name(state) {
+        return state.name
+    },
+
+
     counter(state) {
         return state.counter
     },
+
+    dealGoodsGroup(state) {
+        return  state.dealGoodsGroup.LIST
+                .map( (groups) => {
+                    let group = {
+                        value : groups.ID,
+                        text: groups.VALUE,
+                    };
+                    return group
+                });
+    },
+
+    dealDirections(state) {
+        return  state.dealDirections
+                .map( (status) => {
+                    let type = {
+                        value : status.STATUS_ID,
+                        text: status.NAME,
+                    };
+                    return type
+                 });
+    }
+
 };
 
 // A Vuex instance is created by combining the state, mutations, actions,

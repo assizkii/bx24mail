@@ -5,6 +5,15 @@
                 v-model="valid"
                 lazy-validation
         >
+            <v-alert
+                    :value="saveSuccess"
+                    type="success"
+                    transition="scale-transition"
+                    outline
+                    class="my-3"
+            >
+                Компания успешно {{status}}.     <v-btn target="_blank" :href="companyLink" color="success">Открыть</v-btn>
+            </v-alert>
 
             <v-select
                     v-if="!newCompany && companies.length > 0"
@@ -107,6 +116,7 @@
 
         computed: {
             ...mapGetters([
+                'email',
                 'managers',
                 'loading',
                 'companies',
@@ -116,8 +126,12 @@
 
         data () {
             return {
-                newCompany: false,
+                status: 'обновлена',
+                saveSuccess: false,
+                companyLink: null,
+                newCompany: true,
                 formData: {
+                    phoneId: null,
                     title: '',
                     phone: '',
                     company: null,
@@ -156,22 +170,22 @@
 
             getCompany: async function (id) {
 
-                this.formData.contact = id;
+                this.formData.company = id;
 
                 let params = {
-                    id: this.formData.contact
+                    id: this.formData.company
                 };
 
                 await this.axios.get(this.baseUrl+'/crm.company.get.json', {params}).then(response => {
 
                     let data = response.data.result;
                     this.formData.title = data.TITLE;
-                    this.formData.phone = data.PHONE;
+                    this.formData.phone = data.PHONE[0]['VALUE'];
+                    this.formData.phoneId = data.PHONE[0]['ID'];
 
-                    // let payload = {'id': data.COMPANY_ID};
-                    // this.$store.dispatch("loadCompanies", payload);
-
-                    this.formData.responsible = data.ASSIGNED_BY_ID;
+                    this.$store.dispatch('loadUser', {'id': data.ASSIGNED_BY_ID}).then(response => {
+                        this.formData.responsible = data.ASSIGNED_BY_ID;
+                    });
 
                 })
             },
@@ -181,48 +195,57 @@
                 let method = 'crm.company.add.json';
 
                 let params = {
-
-                    fields: {
-
-                        'TITLE'  : this.formData.title,
-
-                        'EMAIL':  [
-                            {
-                                'VALUE_TYPE' : 'WORK',
-                                'VALUE' : this.email
-                            }
-                        ],
-
-                        'PHONE': [
-                            {
-                                'VALUE_TYPE' : 'WORK',
-                                'VALUE' : this.formData.phone
-                            }
-                        ],
-
-                        'ASSIGNED_BY_ID' : this.formData.responsible
-                    }
-
+                        fields: {
+                            'TITLE'  : this.formData.title,
+                            'EMAIL':  [
+                                {
+                                    'VALUE_TYPE' : 'WORK',
+                                    'VALUE' : this.email
+                                }
+                            ],
+                            'PHONE': [
+                                {
+                                    'ID': this.formData.phoneId,
+                                    'VALUE_TYPE' : 'WORK',
+                                    'VALUE' : this.formData.phone
+                                }
+                            ],
+                            'ASSIGNED_BY_ID' : this.formData.responsible
+                        }
                 };
 
                 if (this.newCompany === false) {
 
                     method = 'crm.company.update.json';
-                    params['ID'] = this.formData.contact;
+                    params['ID'] = this.formData.company;
 
                 }
 
                 await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
 
-                    let data = response.data.result;
+                    let companyId = response.data.result;
 
                     if (this.newCompany !== false) {
-                        this.getCompany(data.result)
+
+                        this.status = 'создана';
+
+                        this.$store.dispatch('init').then(response => {
+                            this.getCompany(companyId)
+                        });
+
+                        this.companyLink = localStorage.baseUrl+'/crm/company/show/'+companyId+'/';
+                        this.saveSuccess = true;
+
+                    } else {
+
+                        this.companyLink = localStorage.baseUrl+'/crm/company/show/'+this.formData.company+'/';
+                        this.saveSuccess = true;
+
                     }
 
                 })
             }
+        },
 
-        }
     }
 </script>

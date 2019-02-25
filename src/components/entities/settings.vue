@@ -1,10 +1,22 @@
 <template>
     <v-app id="settings">
+
+
+
         <v-form
                 ref="form"
                 v-model="valid"
                 lazy-validation
         >
+            <v-alert
+                    :value="saveSuccess"
+                    type="success"
+                    transition="scale-transition"
+                    outline
+                    class="my-3"
+            >
+                Настройки сохранены
+            </v-alert>
 
             <!--name-->
             <v-text-field
@@ -34,17 +46,11 @@
             <v-btn
                     :disabled="!valid"
                     color="success"
-                    @click="validate"
+                    @click="onSubmit"
             >
                 Сохранить
             </v-btn>
 
-            <v-btn
-                    color="error"
-                    @click="reset"
-            >
-                Очистить
-            </v-btn>
 
         </v-form>
     </v-app>
@@ -53,8 +59,11 @@
 <script>
 
     export default {
+
         name: 'Settings',
+
         data: () => ({
+            saveSuccess: false,
             valid: true,
             userId:  localStorage.userId,
             baseUrl: localStorage.baseUrl,
@@ -63,9 +72,7 @@
                 v => !!v || 'Обязательно для заполнения'
             ],
         }),
-        props: {
-            source: String
-        },
+
         methods: {
             onSubmit (evt) {
                 evt.preventDefault();
@@ -74,7 +81,11 @@
                     localStorage.hook = this.hook;
                     localStorage.baseUrl = this.baseUrl;
                     localStorage.userId = this.userId;
-                    this.$emit('login')
+                    let baseUrl = localStorage.baseUrl+'/rest/'+localStorage.userId+'/'+localStorage.hook;
+                    this.$store.dispatch('setBaseUrl', baseUrl);
+
+                    this.$emit('login');
+                    this.saveSuccess = true;
                 }
 
             },

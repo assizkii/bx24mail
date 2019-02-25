@@ -6,6 +6,15 @@
                 lazy-validation
         >
 
+            <v-alert
+                    :value="saveSuccess"
+                    type="success"
+                    transition="scale-transition"
+                    outline
+                    class="my-3"
+            >
+                Контакт успешно {{status}}.     <v-btn target="_blank" :href="contactLink" color="success">Открыть</v-btn>
+            </v-alert>
 
             <v-select
                     v-if="!newContact && contacts.length > 0"
@@ -161,11 +170,15 @@
 
         data () {
             return {
+                status: 'обновлена',
+                saveSuccess: false,
+                contactLink: null,
                 newContact: false,
                 formData: {
                     name: '',
                     lastname: '',
                     phone: '',
+                    phoneId: null,
                     company: null,
                     contact: null,
                     responsible: null,
@@ -223,13 +236,18 @@
                     let data = response.data.result;
                     this.formData.name = data.NAME;
                     this.formData.lastname = data.LAST_NAME;
-                    this.formData.phone = data.PHONE;
+                    this.formData.phone = data.PHONE[0]['VALUE'];
+                    this.formData.phoneId = data.PHONE[0]['ID'];
                     let payload = {'id': data.COMPANY_ID};
+
 
                     this.$store.dispatch("loadCompanies", payload);
                     this.formData.company = data.COMPANY_ID;
 
-                    this.formData.responsible = data.ASSIGNED_BY_ID;
+                    this.$store.dispatch('loadUser', {'id': data.ASSIGNED_BY_ID}).then(response => {
+                        this.formData.responsible = data.ASSIGNED_BY_ID;
+                    });
+
                 })
             },
 
@@ -249,6 +267,7 @@
                         ],
                         'PHONE': [
                             {
+                                'ID': this.formData.phoneId,
                                 'VALUE_TYPE' : 'WORK',
                                 'VALUE' : this.formData.phone
                             }
@@ -257,17 +276,34 @@
                         'ASSIGNED_BY_ID' : this.formData.responsible
                     }
                 };
+
                 if (this.newContact === false) {
                     method = 'crm.contact.update.json';
                     params['ID'] = this.formData.contact;
-
                 }
 
                 await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
-                    let data = response.data.result;
+
+                    let contactId = response.data.result;
+
                     if (this.newContact !== false) {
-                       this.getContact(data.result)
+
+                        this.status = 'создана';
+
+                        this.$store.dispatch('init').then(response => {
+                            this.getContact(contactId)
+                        });
+
+                        this.contactLink = localStorage.baseUrl+'/crm/company/show/'+contactId+'/';
+                        this.saveSuccess = true;
+
+                    } else {
+
+                        this.contactLink = localStorage.baseUrl+'/crm/company/show/'+this.formData.contact+'/';
+                        this.saveSuccess = true;
+
                     }
+
                 })
             }
 

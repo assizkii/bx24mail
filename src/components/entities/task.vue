@@ -6,6 +6,16 @@
                 lazy-validation
         >
 
+            <v-alert
+                    :value="saveSuccess"
+                    type="success"
+                    transition="scale-transition"
+                    outline
+                    class="my-3"
+            >
+                Задача создана.     <v-btn target="_blank" :href="taskLink" color="success">Открыть</v-btn>
+            </v-alert>
+
             <!--name-->
             <v-text-field
                     v-model="formData.title"
@@ -294,10 +304,6 @@
                     this.$refs.form.reset()
                 })
             }
-
-        },
-
-        created: function() {
 
         }
     }

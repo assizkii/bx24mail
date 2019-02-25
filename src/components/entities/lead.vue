@@ -6,6 +6,16 @@
                 lazy-validation
         >
 
+            <v-alert
+                    :value="saveSuccess"
+                    type="success"
+                    transition="scale-transition"
+                    outline
+                    class="my-3"
+            >
+                Лид успешно {{status}}.     <v-btn target="_blank" :href="leadLink" color="success">Открыть</v-btn>
+            </v-alert>
+
             <v-select
                     v-if="!newLead && leads.length > 0"
                     v-model="formData.lead"
@@ -126,12 +136,16 @@
 
         data () {
             return {
+                status: 'обновлен',
+                saveSuccess: false,
+                leadLink: null,
                 newLead: false,
                 formData: {
                     lead: null,
                     name: '',
                     lastname: '',
                     phone: '',
+                    phoneId: null,
                     responsible: null,
                 },
                 phoneMask: 'phone',
@@ -168,18 +182,22 @@
 
                 await this.axios.get(this.baseUrl+'/crm.lead.get.json', {params}).then(response => {
                     let data = response.data.result;
-                    console.log(data);
+
 
                     this.formData.name = data.NAME;
                     this.formData.lastname = data.LAST_NAME;
 
                     data.PHONE.map((phone) => {
                         if (phone.VALUE_TYPE === 'WORK') {
-                            this.formData.phone = phone.VALUE
+                            this.formData.phone = phone.VALUE;
+                            this.formData.phoneId = phone.ID;
                         }
                     });
 
-                    this.formData.responsible = data.ASSIGNED_BY_ID;
+                    this.$store.dispatch('loadUser', {'id': data.ASSIGNED_BY_ID}).then(response => {
+                        this.formData.responsible = data.ASSIGNED_BY_ID;
+                    });
+
                 })
             },
 
@@ -214,11 +232,26 @@
                 }
                 await this.axios.post(this.baseUrl+'/'+method, params).then(response => {
 
-                    let data = response.data.result;
+                    let leadId = response.data.result;
 
                     if (this.newLead !== false) {
-                        this.getLead(data.result)
+
+                        this.status = 'создана';
+
+                        this.$store.dispatch('init').then(response => {
+                            this.getLead(leadId)
+                        });
+
+                        this.leadLink = localStorage.baseUrl+'/crm/company/show/'+leadId+'/';
+                        this.saveSuccess = true;
+
+                    } else {
+
+                        this.leadLink = localStorage.baseUrl+'/crm/company/show/'+this.formData.lead+'/';
+                        this.saveSuccess = true;
+
                     }
+
                 })
             },
 
